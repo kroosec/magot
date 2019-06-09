@@ -55,7 +55,6 @@ let result = add(five, ten);
 		{token.COMMA, ","},
 		{token.IDENT, "ten"},
 		{token.RPAREN, ")"},
-		{token.LBRACE, "{"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
