@@ -56,29 +56,43 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
 		tok = newToken(token.RBRACE, l.ch)
-	case '0':
-		tok = newToken(token.EOF, l.ch)
+	case 0:
+		tok.Type = token.EOF
+		tok.Literal = ""
 	default:
 		if isIdentifierLetter(l.ch) {
-			tok.Literal = readIdentifier(l)
+			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupTokenType(tok.Literal)
 			return tok
+		} else if isDigit(l.ch) {
+			tok.Literal = l.readNumber()
+			tok.Type = token.INT
+			return tok
 		} else {
-			tok.Type = token.ILLEGAL
+			tok = newToken(token.ILLEGAL, l.ch)
 		}
 	}
 	l.readChar()
 	return tok
 }
 
-func isIdentifierLetter(ch byte) bool {
-	if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_' {
-		return true
+func (l *Lexer) readNumber() string {
+	index := l.index
+	for isDigit(l.ch) {
+		l.readChar()
 	}
-	return false
+	return l.input[index:l.index]
 }
 
-func readIdentifier(l *Lexer) string {
+func isDigit(ch byte) bool {
+	return ch >= '0' && ch <= '9'
+}
+
+func isIdentifierLetter(ch byte) bool {
+	return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'
+}
+
+func (l *Lexer) readIdentifier() string {
 	index := l.index
 	for isIdentifierLetter(l.ch) {
 		l.readChar()
