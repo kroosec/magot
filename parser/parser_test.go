@@ -16,9 +16,7 @@ let foobar = 12345;
 	parse := New(lex)
 
 	program := parse.ParseProgram()
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
-	}
+	checkParseErrors(t, parse)
 	if len(program.Statements) != 3 {
 		t.Fatalf("expected program.Statements of size 3, got=%d", len(program.Statements))
 	}
@@ -59,4 +57,42 @@ func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
 		return false
 	}
 	return true
+}
+
+func checkParseErrors(t *testing.T, p *Parser) {
+	errors := p.Errors()
+	if len(errors) == 0 {
+		return
+	}
+	for _, msg := range errors {
+		t.Errorf("parse error: %s", msg)
+	}
+	t.FailNow()
+}
+
+func TestReturnStatement(t *testing.T) {
+	input := `
+return 5;
+return 10;
+return 1234;
+`
+	lex := lexer.New(input)
+	parse := New(lex)
+
+	program := parse.ParseProgram()
+	checkParseErrors(t, parse)
+	if len(program.Statements) != 3 {
+		t.Fatalf("expected program.Statements of size 3, got=%d", len(program.Statements))
+	}
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("expected *ast.ReturnStatement, got=%T", stmt)
+			continue
+		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("expected 'return', got=%T", returnStmt.TokenLiteral())
+		}
+	}
+
 }
