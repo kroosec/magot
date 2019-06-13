@@ -3,7 +3,9 @@ package parser
 import (
 	"magot/ast"
 	"magot/lexer"
+	"strconv"
 	"testing"
+	"fmt"
 )
 
 func TestLetStatement(t *testing.T) {
@@ -95,4 +97,120 @@ return 1234;
 		}
 	}
 
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	lex := lexer.New(input)
+	parse := New(lex)
+
+	program := parse.ParseProgram()
+	checkParseErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("expected *ast.Identifier, got=%T", ident)
+	}
+	expected := "foobar"
+	if ident.Value != expected {
+		t.Errorf("Erroneous value. expected=%s, got=%s", expected, ident.Value)
+	}
+	if ident.TokenLiteral() != expected {
+		t.Errorf("Erroneous value. expected=%s, got=%s", expected, ident.TokenLiteral())
+	}
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "5;"
+
+	lex := lexer.New(input)
+	parse := New(lex)
+
+	program := parse.ParseProgram()
+	checkParseErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("expected *ast.ExpressionStatement, got=%T", stmt)
+	}
+
+	intLit, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("expected *ast.IntegerLiteral, got=%T", intLit)
+	}
+	expected := 5
+	if intLit.Value != int64(expected) {
+		t.Errorf("Erroneous value. expected=%d, got=%d", expected, intLit.Value)
+	}
+	if intLit.TokenLiteral() != strconv.Itoa(expected) {
+		t.Errorf("Erroneous value. expected=%s, got=%s", string(expected), intLit.TokenLiteral())
+	}
+}
+
+func TestParsingPrefixExpression(t *testing.T) {
+	prefixTests := []struct {
+		input        string
+		operator     string
+		integerValue int64
+	}{
+		{"!5;", "!", 5},
+		{"-15;", "-", 15},
+	}
+
+	for _, tt := range prefixTests {
+		lex := lexer.New(tt.input)
+		parse := New(lex)
+
+		program := parse.ParseProgram()
+		checkParseErrors(t, parse)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("stmt not a *ast.PrefixExpression, got=%T", stmt.Expression)
+		}
+		if exp.Operator != tt.operator {
+			t.Fatalf("Erroneous operator expcted=%s, got=%s", tt.operator, exp.Operator)
+		}
+		if !testIntegerLiteral(t, exp.Right, tt.integerValue) {
+			return
+		}
+
+	}
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
+	integ, ok := il.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("expected *ast.IntegerLiteral, got=%T", il)
+		return false
+	}
+	if integ.Value != value {
+		t.Errorf("Erroneous integ.Value expected=%d, got=%d", value, integ.Value)
+		return false
+	}
+	if integ.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("Erroneous integ.TokenLiteral() expected=%d, got=%s", value, integ.TokenLiteral())
+		return false
+	}
+	return true
 }
