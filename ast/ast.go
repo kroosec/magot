@@ -63,7 +63,7 @@ func (ls *LetStatement) String() string {
 }
 
 type Identifier struct {
-	Token token.Token // token.IDENT
+	Token token.Token // token.INT
 	Value string
 }
 
