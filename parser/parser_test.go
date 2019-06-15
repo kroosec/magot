@@ -14,14 +14,7 @@ let x = 5;
 let y = 10;
 let foobar = 12345;
 `
-	lex := lexer.New(input)
-	parse := New(lex)
-
-	program := parse.ParseProgram()
-	checkParseErrors(t, parse)
-	if len(program.Statements) != 3 {
-		t.Fatalf("expected program.Statements of size 3, got=%d", len(program.Statements))
-	}
+	program := getProgram(t, input, 3)
 	tests := []struct {
 		expectedIdentifier string
 	}{
@@ -44,14 +37,7 @@ return 5;
 return 10;
 return 1234;
 `
-	lex := lexer.New(input)
-	parse := New(lex)
-
-	program := parse.ParseProgram()
-	checkParseErrors(t, parse)
-	if len(program.Statements) != 3 {
-		t.Fatalf("expected program.Statements of size 3, got=%d", len(program.Statements))
-	}
+	program := getProgram(t, input, 3)
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
 		if !ok {
@@ -67,15 +53,7 @@ return 1234;
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 
-	lex := lexer.New(input)
-	parse := New(lex)
-
-	program := parse.ParseProgram()
-	checkParseErrors(t, parse)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
-	}
+	program := getProgram(t, input, 1)
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
@@ -97,15 +75,7 @@ func TestIdentifierExpression(t *testing.T) {
 func TestIntegerLiteralExpression(t *testing.T) {
 	input := "5;"
 
-	lex := lexer.New(input)
-	parse := New(lex)
-
-	program := parse.ParseProgram()
-	checkParseErrors(t, parse)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
-	}
+	program := getProgram(t, input, 1)
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("expected *ast.ExpressionStatement, got=%T", stmt)
@@ -137,15 +107,7 @@ func TestParsingPrefixExpression(t *testing.T) {
 	}
 
 	for _, tt := range prefixTests {
-		lex := lexer.New(tt.input)
-		parse := New(lex)
-
-		program := parse.ParseProgram()
-		checkParseErrors(t, parse)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
-		}
+		program := getProgram(t, tt.input, 1)
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
 			t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
@@ -175,15 +137,7 @@ func TestBooleanExpression(t *testing.T) {
 	}
 
 	for _, tt := range boolTests {
-		lex := lexer.New(tt.input)
-		parse := New(lex)
-
-		program := parse.ParseProgram()
-		checkParseErrors(t, parse)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
-		}
+		program := getProgram(t, tt.input, 1)
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
 			t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
@@ -282,14 +236,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 func TestIfExpression(t *testing.T) {
 	input := `if (x < y) { x }`
 
-	lex := lexer.New(input)
-	parse := New(lex)
-	program := parse.ParseProgram()
-	checkParseErrors(t, parse)
-	if len(program.Statements) != 1 {
-		t.Fatalf("expected program.Statements of size 1, got=%d", len(program.Statements))
-	}
-
+	program := getProgram(t, input, 1)
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
@@ -487,4 +434,22 @@ func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, ope
 		return false
 	}
 	return true
+}
+
+func getProgram(t *testing.T, input string, statements int) *ast.Program {
+	t.Helper()
+	lex := lexer.New(input)
+	parse := New(lex)
+	program := parse.ParseProgram()
+	checkParseErrors(t, parse)
+	if len(program.Statements) != statements {
+		t.Fatalf("expected program.Statements of size %d, got=%d", statements, len(program.Statements))
+	}
+	return program
+}
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	_ = getProgram(t, input, 1)
 }
