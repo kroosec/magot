@@ -8,44 +8,28 @@ import (
 	"testing"
 )
 
-func TestLetStatement(t *testing.T) {
-	input := `
-let x = 5;
-let y = 10;
-let foobar = 12345;
-`
-	program := getProgram(t, input, 3)
+func TestReturnStatements(t *testing.T) {
 	tests := []struct {
-		expectedIdentifier string
+		input string
+		value interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"return 5;", 5},
+		{"return false;", false},
+		{"return foo;", "foo"},
 	}
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
-			return
-		}
-	}
-}
-
-func TestReturnStatement(t *testing.T) {
-	input := `
-return 5;
-return 10;
-return 1234;
-`
-	program := getProgram(t, input, 3)
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
+	for _, tt := range tests {
+		program := getProgram(t, tt.input, 1)
+		retStmt, ok := program.Statements[0].(*ast.ReturnStatement)
 		if !ok {
-			t.Errorf("expected *ast.ReturnStatement, got=%T", stmt)
-			continue
+			t.Fatalf("expected ReturntStatement, got=%T", program.Statements[0])
 		}
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("expected 'return', got=%T", returnStmt.TokenLiteral())
+
+		if retStmt.TokenLiteral() != "return" {
+			t.Fatalf("ReturnStatement.TokenLiteral() not return, got=%s", retStmt.TokenLiteral())
+		}
+		if !testLiteralExpression(t, retStmt.ReturnValue, tt.value) {
+			return
 		}
 	}
 }
@@ -217,6 +201,9 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
 	}
 
 	for i, tt := range infixTests {
@@ -365,6 +352,30 @@ func TestFunctionParametersParsing(t *testing.T) {
 	}
 }
 
+func TestCallExpressionParsing(t *testing.T) {
+	input := `add(1, 2 * 3, 4 + 5);`
+
+	program := getProgram(t, input, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression not ast.CallExpression, got=%T", stmt.Expression)
+	}
+	if len(exp.Arguments) != 3 {
+		t.Fatalf("parameters not 3, got=%d", len(exp.Arguments))
+	}
+	if !testIdentifier(t, exp.Function, "add") {
+		return
+	}
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
+}
+
 func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
 	t.Helper()
 	if stmt.TokenLiteral() != "let" {
@@ -385,6 +396,30 @@ func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
 		return false
 	}
 	return true
+}
+
+func TestLetStatement(t *testing.T) {
+	tests := []struct {
+		input      string
+		identifier string
+		value      interface{}
+	}{
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foo = bar;", "foo", "bar"},
+	}
+
+	for _, tt := range tests {
+		program := getProgram(t, tt.input, 1)
+		stmt := program.Statements[0]
+		if !testLetStatement(t, stmt, tt.identifier) {
+			return
+		}
+		val := stmt.(*ast.LetStatement).Value
+		if !testLiteralExpression(t, val, tt.value) {
+			return
+		}
+	}
 }
 
 func checkParseErrors(t *testing.T, p *Parser) {
