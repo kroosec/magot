@@ -312,6 +312,59 @@ func TestIfElseExpression(t *testing.T) {
 	}
 }
 
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	program := getProgram(t, input, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("expected *ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression not ast.FunctionLiteral, got=%T", stmt.Expression)
+	}
+	if len(function.Parameters) != 2 {
+		t.Fatalf("parameters not 2, got=%d", len(function.Parameters))
+	}
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+	if len(function.Body.Statements) != 1 {
+		t.Fatalf("Body.Statements not 1, got=%d", len(function.Body.Statements))
+	}
+
+	bodyStmt, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("function body statement not an ast.ExpressionStatement, got=%T", function.Body.Statements[0])
+	}
+	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestFunctionParametersParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		{"fn() {};", []string{}},
+		{"fn(x) {};", []string{"x"}},
+		{"fn(x, y, z) {};", []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		lex := lexer.New(tt.input)
+		parse := New(lex)
+		program := parse.ParseProgram()
+		checkParseErrors(t, parse)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		function := stmt.Expression.(*ast.FunctionLiteral)
+		if len(function.Parameters) != len(tt.expected) {
+			t.Errorf("Parameters length wrong want=%d, got=%d", len(tt.expected), len(function.Parameters))
+		}
+	}
+}
+
 func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
 	t.Helper()
 	if stmt.TokenLiteral() != "let" {
@@ -446,10 +499,4 @@ func getProgram(t *testing.T, input string, statements int) *ast.Program {
 		t.Fatalf("expected program.Statements of size %d, got=%d", statements, len(program.Statements))
 	}
 	return program
-}
-
-func TestFunctionLiteralParsing(t *testing.T) {
-	input := `fn(x, y) { x + y; }`
-
-	_ = getProgram(t, input, 1)
 }
