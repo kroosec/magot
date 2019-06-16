@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"magot/lexer"
-	"magot/token"
+	"magot/parser"
 )
 
 const PROMPT = ">>> "
@@ -21,8 +21,21 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		line := scanner.Text()
 		lex := lexer.New(line)
-		for tok := lex.NextToken(); tok.Type != token.EOF; tok = lex.NextToken() {
-			fmt.Printf("%+v\n", tok)
+		parse := parser.New(lex)
+		program := parse.ParseProgram()
+
+		if len(parse.Errors()) != 0 {
+			printParseErrors(out, parse.Errors())
+			continue
 		}
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParseErrors(out io.Writer, errors []string) {
+	io.WriteString(out, " parser errors:\n")
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
