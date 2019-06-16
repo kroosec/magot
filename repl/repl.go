@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"magot/evaluator"
 	"magot/lexer"
 	"magot/parser"
 )
@@ -28,8 +29,11 @@ func Start(in io.Reader, out io.Writer) {
 			printParseErrors(out, parse.Errors())
 			continue
 		}
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
