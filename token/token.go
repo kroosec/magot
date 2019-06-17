@@ -41,13 +41,13 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
+	LPAREN   = "("
+	RPAREN   = ")"
+	LBRACE   = "{"
+	RBRACE   = "}"
 	LBRACKET = "["
 	RBRACKET = "]"
-	COLON = ":"
+	COLON    = ":"
 )
 
 var keywords map[string]TokenType = map[string]TokenType{

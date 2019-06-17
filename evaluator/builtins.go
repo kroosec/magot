@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"magot/object"
 )
 
@@ -45,7 +46,7 @@ var builtins = map[string]*object.Builtin{
 			}
 			array := args[0].(*object.Array)
 			if len(array.Elements) > 0 {
-				return array.Elements[len(array.Elements) - 1]
+				return array.Elements[len(array.Elements)-1]
 			}
 			return NULL
 		},
@@ -82,6 +83,14 @@ var builtins = map[string]*object.Builtin{
 			copy(newElements, array.Elements)
 			newElements[length] = args[1]
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"puts": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			for _, arg := range args {
+				fmt.Println(arg.Inspect())
+			}
+			return NULL
 		},
 	},
 }
