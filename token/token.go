@@ -20,8 +20,9 @@ const (
 	TRUE     = "true"
 	FALSE    = "false"
 
-	IDENT = "IDENT" // Identifier
-	INT   = "INT"   // Literal
+	IDENT  = "IDENT" // Identifier
+	INT    = "INT"   // Literal
+	STRING = "STRING"
 
 	// Operators
 	ASSIGN = "="

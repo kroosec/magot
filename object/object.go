@@ -3,8 +3,8 @@ package object
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"magot/ast"
+	"strings"
 )
 
 type ObjectType string
@@ -16,12 +16,20 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
+	STRING_OBJ       = "STRING"
 )
 
 type Object interface {
 	Type() ObjectType
 	Inspect() string
 }
+
+type String struct {
+	Value string
+}
+
+func (st *String) Type() ObjectType { return STRING_OBJ }
+func (st *String) Inspect() string  { return st.Value }
 
 type ReturnValue struct {
 	Value Object

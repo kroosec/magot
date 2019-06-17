@@ -422,6 +422,21 @@ func TestLetStatement(t *testing.T) {
 	}
 }
 
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world";`
+
+	program := getProgram(t, input, 1)
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	str, ok := stmt.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.StringLiteral, got=%T", stmt.Expression)
+	}
+	expected := "hello world"
+	if str.Value != expected {
+		t.Errorf("string not %s, got=%s", expected, str.Value)
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	t.Helper()
 	errors := p.Errors()

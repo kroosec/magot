@@ -6,8 +6,8 @@ import (
 	"io"
 	"magot/evaluator"
 	"magot/lexer"
-	"magot/parser"
 	"magot/object"
+	"magot/parser"
 )
 
 const PROMPT = ">>> "

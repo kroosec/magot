@@ -24,6 +24,8 @@ if (5 < 10) {
 
 10 == 10;
 10 != 5;
+"foobar"
+" foo bar "
 `
 
 	tests := []struct {
@@ -104,6 +106,8 @@ if (5 < 10) {
 		{token.NEQ, "!="},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.STRING, " foo bar "},
 		{token.EOF, ""},
 	}
 
@@ -112,7 +116,7 @@ if (5 < 10) {
 		tok := l.NextToken()
 
 		if tok.Type != tt.expectedType {
-			t.Fatalf("Test %d: Erroneous type, got '%q', expected '%q'", i, tok.Type, tt.expectedType)
+			t.Fatalf("Test %d: Erroneous token type, got '%q', expected '%q'", i, tok.Type, tt.expectedType)
 		}
 		if tok.Literal != tt.expectedLiteral {
 			t.Fatalf("Test %d: Erroneous literal, got '%q', expected '%q'", i, tok.Literal, tt.expectedLiteral)
