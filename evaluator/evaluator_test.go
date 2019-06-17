@@ -248,6 +248,34 @@ func TestBuiltinFunctions(t *testing.T) {
 	}
 }
 
+func TestArrayIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"[1, 2, 3][0]", 1},
+		{"[1, 2, 3][1]", 2},
+		{"[1, 3, 5][2]", 5},
+		{"let i = 0; [1][i]", 1},
+		{"[1, 2, 3][1 + 1]", 3},
+		{"let foo = [1, 2, 3]; foo[2]", 3},
+		{"let foo = [1, 2, 3]; foo[0] + foo[1] + foo[2]", 6},
+		{"let foo = [1, 2, 3]; let a = foo[0]; foo[a]", 2},
+		{"[1, 3, 5][3]", nil},
+		{"[1, 3, 5][-1]", nil},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
 func TestClosures(t *testing.T) {
 	input := `
 let newAdder = fn(x) {
@@ -269,6 +297,21 @@ func TestStringLiteral(t *testing.T) {
 	if str.Value != "hello world!" {
 		t.Errorf("String has wrong value, got=%s", str.Value)
 	}
+}
+
+func TestArrayLiteral(t *testing.T) {
+	input := "[1, 2 + 2, 3 * 4]"
+	evaluated := testEval(input)
+	array, ok := evaluated.(*object.Array)
+	if !ok {
+		t.Fatalf("object not of type Array, got=%T(%+v)", evaluated, evaluated)
+	}
+	if len(array.Elements) != 3 {
+		t.Fatalf("array has wrong num of elements. got=%d", len(array.Elements))
+	}
+	testIntegerObject(t, array.Elements[0], 1)
+	testIntegerObject(t, array.Elements[1], 4)
+	testIntegerObject(t, array.Elements[2], 12)
 }
 
 func TestStringConcatenation(t *testing.T) {
