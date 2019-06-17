@@ -468,6 +468,82 @@ func TestArrayLiteral(t *testing.T) {
 	testInfixExpression(t, array.Elements[2], 3, "+", 4)
 }
 
+func TestHashLiteral(t *testing.T) {
+	input := `{"foo": 1, "bar": 2}`
+
+	program := getProgram(t, input, 1)
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.HashLiteral, got=%T", stmt.Expression)
+	}
+	if len(hash.Pairs) != 2 {
+		t.Errorf("hash.Pairs has wrong length. got=%d", len(hash.Pairs))
+	}
+	expected := map[string]int64{
+		"foo": 1,
+		"bar": 2,
+	}
+	for key, value := range hash.Pairs {
+		literal, ok := key.(*ast.StringLiteral)
+		if !ok {
+			t.Errorf("key is not ast.StringLiteral. got=%T", key)
+			continue
+		}
+		expectedValue := expected[literal.String()]
+		testIntegerLiteral(t, value, expectedValue)
+	}
+}
+
+func TestHashLiteralWithExpressions(t *testing.T) {
+	input := `{"three": 1 + 2, "eight": 2 * 4}`
+
+	program := getProgram(t, input, 1)
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.HashLiteral, got=%T", stmt.Expression)
+	}
+	if len(hash.Pairs) != 2 {
+		t.Errorf("hash.Pairs has wrong length. got=%d", len(hash.Pairs))
+	}
+	expected := map[string]func(ast.Expression){
+		"three": func(e ast.Expression) {
+			testInfixExpression(t, e, 1, "+", 2)
+		},
+		"eight": func(e ast.Expression) {
+			testInfixExpression(t, e, 2, "*", 4)
+		},
+	}
+	for key, value := range hash.Pairs {
+		literal, ok := key.(*ast.StringLiteral)
+		if !ok {
+			t.Errorf("key is not ast.StringLiteral. got=%T", key)
+			continue
+		}
+		testFunc, ok := expected[literal.String()]
+		if !ok {
+			t.Errorf("no test function for key %q found", literal.String())
+			continue
+		}
+		testFunc(value)
+	}
+}
+
+func TestEmptyHashLiteral(t *testing.T) {
+	input := "{}"
+
+	program := getProgram(t, input, 1)
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.HashLiteral, got=%T", stmt.Expression)
+	}
+	if len(hash.Pairs) > 0 {
+		t.Errorf("hash.Pairs not empty. got=%d", len(hash.Pairs))
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	t.Helper()
 	errors := p.Errors()
